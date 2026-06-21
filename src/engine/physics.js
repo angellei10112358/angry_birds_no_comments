@@ -72,6 +72,7 @@ function getAllBodies() {
 }
 
 function destroy() {
+  if (!engine) return;
   clearWorld();
   Events.off(engine, 'collisionStart', handleCollisions);
   engine = null;

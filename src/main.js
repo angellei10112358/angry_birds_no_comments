@@ -38,7 +38,7 @@ function init() {
   input.init(renderer.canvas, renderer.GAME_W, renderer.GAME_H);
   setupInputHandlers();
   setupStateHandlers();
-  setupCollisionHandling();
+  canvasClickForAbility();
   showMenu();
 }
 
@@ -68,6 +68,8 @@ function showMenu() {
     cancelAnimationFrame(animFrameId);
     animFrameId = null;
   }
+  renderer.beginFrame();
+  renderer.endFrame();
   renderer.useScreenSpace();
   hud.showMenu(renderer.ctx, () => {
     startGame(1);
@@ -77,6 +79,7 @@ function showMenu() {
 function startGame(levelId) {
   cleanupLevel();
   physics.init();
+  setupCollisionHandling();
   currentLevelId = levelId;
   loadLevel(levelId);
   setState(State.PLAYING);
@@ -194,14 +197,19 @@ function useBirdAbility(bird) {
   const birdType = bird.birdType;
   const result = useAbility(bird, physics);
   if (birdType === 'black') {
+    launchedBirds = launchedBirds.filter(b => b !== bird);
     explosions.push({ x: birdPos.x, y: birdPos.y, radius: 120, timer: 300 });
     audio.playExplosion();
     blastNearby(birdPos.x, birdPos.y, 120);
+    currentBirdBody = null;
+    setTimeout(() => scheduleNextBird(), 600);
   } else if (birdType === 'blue') {
     if (result && result.length) {
       for (const b of result) launchedBirds.push(b);
+      currentBirdBody = result[Math.floor(result.length / 2)];
+    } else {
+      currentBirdBody = null;
     }
-    currentBirdBody = null;
   }
 }
 
@@ -260,8 +268,6 @@ function setupCollisionHandling() {
       }
     }
   });
-
-  canvasClickForAbility();
 }
 
 function canvasClickForAbility() {
@@ -293,6 +299,28 @@ function checkLoseCondition() {
   }
 }
 
+function cleanupOffscreenBirds() {
+  let removedCurrent = false;
+  for (const b of [...launchedBirds]) {
+    if (b.isDead) {
+      if (b === currentBirdBody) removedCurrent = true;
+      launchedBirds = launchedBirds.filter(x => x !== b);
+      continue;
+    }
+    const pos = b.position;
+    if (pos.x < -200 || pos.x > physics.WORLD_W + 200 || pos.y > physics.GROUND_Y + 200) {
+      if (b === currentBirdBody) removedCurrent = true;
+      b.isDead = true;
+      physics.removeBody(b);
+      launchedBirds = launchedBirds.filter(x => x !== b);
+    }
+  }
+  if (removedCurrent) {
+    currentBirdBody = null;
+    scheduleNextBird();
+  }
+}
+
 function gameLoop(time) {
   if (!gameRunning) return;
   animFrameId = requestAnimationFrame(gameLoop);
@@ -302,6 +330,7 @@ function gameLoop(time) {
 
   physics.step(FIXED_DT);
 
+  cleanupOffscreenBirds();
   updateLaunchedBird();
 
   checkLoseCondition();
