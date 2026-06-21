@@ -41,10 +41,9 @@ function removeBird(bird) {
 }
 
 function useAbility(bird, physics) {
-  if (bird.usedAbility || !bird.isLaunched) return;
+  if (bird.usedAbility || !bird.isLaunched) return null;
   bird.usedAbility = true;
   const vel = bird.velocity;
-  const speed = Vector.magnitude(vel);
 
   switch (bird.birdType) {
     case 'yellow':
@@ -52,16 +51,15 @@ function useAbility(bird, physics) {
         x: vel.x * 2.5,
         y: vel.y * 2.5
       });
-      break;
+      return null;
     case 'blue':
-      splitBlue(bird, physics);
-      break;
+      return splitBlue(bird, physics);
     case 'black':
       explodeBlack(bird, physics);
-      break;
+      return null;
     case 'white':
       dropEgg(bird, physics);
-      break;
+      return null;
   }
 }
 

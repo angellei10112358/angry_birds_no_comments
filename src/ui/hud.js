@@ -13,7 +13,7 @@ let buttonClickHandler = null;
 
 function draw(ctx, score, currentLevel, birdsRemaining, birdQueue) {
   ctx.save();
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
 
   ctx.fillStyle = 'rgba(0,0,0,0.4)';
   ctx.fillRect(0, 0, GAME_W, 45);
@@ -70,7 +70,7 @@ function drawButton(ctx, text, x, y, w, h, action) {
 
 function showLevelComplete(ctx, score, stars, onRestart, onNext) {
   ctx.save();
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
   ctx.fillStyle = 'rgba(0,0,0,0.7)';
   ctx.fillRect(0, 0, GAME_W, GAME_H);
 
@@ -119,7 +119,7 @@ function showLevelComplete(ctx, score, stars, onRestart, onNext) {
 
 function showGameOver(ctx, onRestart) {
   ctx.save();
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
   ctx.fillStyle = 'rgba(0,0,0,0.7)';
   ctx.fillRect(0, 0, GAME_W, GAME_H);
 
@@ -147,7 +147,7 @@ function showGameOver(ctx, onRestart) {
 
 function showMenu(ctx, onStart) {
   ctx.save();
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
   ctx.fillStyle = '#87CEEB';
   ctx.fillRect(0, 0, GAME_W, GAME_H);
 
@@ -181,15 +181,9 @@ function showMenu(ctx, onStart) {
   ctx.restore();
 }
 
-function handleClick(mx, my, canvas) {
-  const rect = canvas.getBoundingClientRect();
-  const scaleX = canvas.width / rect.width;
-  const scaleY = canvas.height / rect.height;
-  const px = (mx - rect.left) * scaleX;
-  const py = (my - rect.top) * scaleY;
-
+function handleClick(logicalX, logicalY) {
   for (const btn of buttons) {
-    if (px >= btn.x && px <= btn.x + btn.w && py >= btn.y && py <= btn.y + btn.h) {
+    if (logicalX >= btn.x && logicalX <= btn.x + btn.w && logicalY >= btn.y && logicalY <= btn.y + btn.h) {
       return btn.action;
     }
   }

@@ -1,6 +1,4 @@
-import { setState, State } from '../systems/state.js';
-
-const { Engine, World, Bodies, Body, Events, Composite, Vector, Constraint, Sleeping } = Matter;
+const { Engine, World, Bodies, Body, Events, Composite, Vector, Sleeping } = Matter;
 
 let engine, world;
 let ground, leftWall, rightWall, ceiling;
@@ -69,6 +67,10 @@ function clearWorld() {
   Sleeping.all(engine);
 }
 
+function getAllBodies() {
+  return Composite.allBodies(world);
+}
+
 function destroy() {
   clearWorld();
   Events.off(engine, 'collisionStart', handleCollisions);
@@ -76,4 +78,4 @@ function destroy() {
   world = null;
 }
 
-export { init, step, addBody, removeBody, clearWorld, destroy, onCollision, engine, world, WORLD_W, GROUND_Y };
+export { init, step, addBody, removeBody, clearWorld, destroy, onCollision, getAllBodies, engine, world, WORLD_W, GROUND_Y };

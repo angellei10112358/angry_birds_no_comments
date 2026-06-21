@@ -1,8 +1,11 @@
 let canvas;
 let handlers = { down: [], move: [], up: [] };
+let gameW = 1600, gameH = 600;
 
-function init(canvasEl) {
+function init(canvasEl, gameWidth, gameHeight) {
   canvas = canvasEl;
+  gameW = gameWidth || 1600;
+  gameH = gameHeight || 600;
   canvas.addEventListener('pointerdown', onDown);
   canvas.addEventListener('pointermove', onMove);
   canvas.addEventListener('pointerup', onUp);
@@ -30,11 +33,9 @@ function onUp(e) {
 
 function getPos(e) {
   const rect = canvas.getBoundingClientRect();
-  const scaleX = canvas.width / rect.width;
-  const scaleY = canvas.height / rect.height;
   return {
-    x: (e.clientX - rect.left) * scaleX,
-    y: (e.clientY - rect.top) * scaleY
+    x: (e.clientX - rect.left) / rect.width * gameW,
+    y: (e.clientY - rect.top) / rect.height * gameH
   };
 }
 

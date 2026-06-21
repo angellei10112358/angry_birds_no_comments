@@ -5,11 +5,13 @@ import * as audio from './systems/audio.js';
 import * as score from './systems/score.js';
 import * as hud from './ui/hud.js';
 import { State, setState, onState, getState } from './systems/state.js';
-import { spawnPig, removePig, damagePig } from './entities/Pig.js';
-import { spawnBlock, removeBlock, damageBlock } from './entities/Block.js';
-import { spawnBird, removeBird, useAbility } from './entities/Bird.js';
+import { spawnPig, damagePig } from './entities/Pig.js';
+import { spawnBlock, damageBlock } from './entities/Block.js';
+import { spawnBird, useAbility } from './entities/Bird.js';
 import * as slingshot from './entities/Slingshot.js';
 import { getLevel, getLevelCount } from './levels/levels.js';
+
+const { Body } = Matter;
 
 let worldBodies = [];
 let pigs = [];
@@ -26,13 +28,14 @@ let animFrameId = null;
 let explosions = [];
 
 let inUIState = false;
+let lastLaunchTime = 0;
 
 const FIXED_DT = 1 / 60;
 
 function init() {
   renderer.init();
   audio.init();
-  input.init(renderer.canvas);
+  input.init(renderer.canvas, renderer.GAME_W, renderer.GAME_H);
   setupInputHandlers();
   setupStateHandlers();
   setupCollisionHandling();
@@ -65,11 +68,10 @@ function showMenu() {
     cancelAnimationFrame(animFrameId);
     animFrameId = null;
   }
-  renderer.beginFrame();
-  hud.showMenu(renderer.canvas, renderer.ctx, () => {
+  renderer.useScreenSpace();
+  hud.showMenu(renderer.ctx, () => {
     startGame(1);
   });
-  renderer.endFrame();
 }
 
 function startGame(levelId) {
@@ -123,7 +125,7 @@ function spawnNextBird() {
   if (birdQueue.length === 0) return;
   const type = birdQueue.shift();
   const bird = spawnBird(type, slingshot.SLINGSHOT_X, slingshot.SLINGSHOT_Y);
-  bird.isStatic = true;
+  Body.setStatic(bird, true);
   currentBirdBody = bird;
   slingshot.setBird(bird);
 
@@ -133,7 +135,8 @@ function spawnNextBird() {
 function setupInputHandlers() {
   input.on('down', (sx, sy) => {
     if (inUIState) {
-      const action = hud.handleClick(sx, sy, renderer.canvas, renderer.ctx);
+      audio.resume();
+      const action = hud.handleClick(sx, sy);
       if (action === 'start_game') {
         startGame(1);
       } else if (action === 'restart' || action === 'complete_restart' || action === 'gameover_restart') {
@@ -172,12 +175,14 @@ function setupInputHandlers() {
     if (currentBirdBody && currentBirdBody.isLaunched) {
       audio.playLaunch();
       launchedBirds.push(currentBirdBody);
+      lastLaunchTime = performance.now();
     }
   });
 
   document.addEventListener('keydown', (e) => {
     if (e.code === 'Space' && getState() === State.PLAYING) {
-      if (currentBirdBody && currentBirdBody.isLaunched && !currentBirdBody.usedAbility) {
+      if (currentBirdBody && currentBirdBody.isLaunched && !currentBirdBody.usedAbility && !slingshot.isBirdLoaded()) {
+        if (performance.now() - lastLaunchTime < 300) return;
         useBirdAbility(currentBirdBody);
       }
     }
@@ -185,13 +190,42 @@ function setupInputHandlers() {
 }
 
 function useBirdAbility(bird) {
-  useAbility(bird, physics);
-  if (bird.birdType === 'black') {
-    explosions.push({ x: bird.position.x, y: bird.position.y, radius: 120, timer: 300 });
+  const birdPos = { x: bird.position.x, y: bird.position.y };
+  const birdType = bird.birdType;
+  const result = useAbility(bird, physics);
+  if (birdType === 'black') {
+    explosions.push({ x: birdPos.x, y: birdPos.y, radius: 120, timer: 300 });
     audio.playExplosion();
-  } else if (bird.birdType === 'blue') {
-  } else if (bird.birdType === 'white') {
+    blastNearby(birdPos.x, birdPos.y, 120);
+  } else if (birdType === 'blue') {
+    if (result && result.length) {
+      for (const b of result) launchedBirds.push(b);
+    }
+    currentBirdBody = null;
   }
+}
+
+function blastNearby(x, y, radius) {
+  for (const p of [...pigs]) {
+    const dx = p.position.x - x;
+    const dy = p.position.y - y;
+    if (Math.sqrt(dx * dx + dy * dy) < radius) {
+      physics.removeBody(p);
+      pigs = pigs.filter(pg => pg !== p);
+      score.addPigKill();
+      audio.playPigDeath();
+    }
+  }
+  for (const b of [...blocks]) {
+    const dx = b.position.x - x;
+    const dy = b.position.y - y;
+    if (Math.sqrt(dx * dx + dy * dy) < radius) {
+      physics.removeBody(b);
+      blocks = blocks.filter(bl => bl !== b);
+      score.addBlockBreak(b.blockType);
+    }
+  }
+  checkWinCondition();
 }
 
 function setupCollisionHandling() {
@@ -220,48 +254,9 @@ function setupCollisionHandling() {
           audio.playHit();
         }
       } else if (b.label === 'egg') {
-        if (impulse > 3) {
-          physics.removeBody(b);
-          explosions.push({ x: b.position.x, y: b.position.y, radius: 80, timer: 200 });
-          audio.playExplosion();
-          const nearby = [];
-          for (const p of pigs) {
-            const dx = p.position.x - b.position.x;
-            const dy = p.position.y - b.position.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < 80) nearby.push(p);
-          }
-          for (const p of nearby) {
-            if (pigs.includes(p)) {
-              pigs = pigs.filter(pg => pg !== p);
-              score.addPigKill();
-              audio.playPigDeath();
-              physics.removeBody(p);
-            }
-          }
-          checkWinCondition();
-          for (const bl of blocks) {
-            const dx = bl.position.x - b.position.x;
-            const dy = bl.position.y - b.position.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < 80) {
-              if (blocks.includes(bl)) {
-                blocks = blocks.filter(bx => bx !== bl);
-                score.addBlockBreak(bl.blockType);
-                physics.removeBody(bl);
-              }
-            }
-          }
-        }
-      }
-    }
-
-    if (bodyA.label === 'bird' && bodyA.isLaunched && !bodyA.usedAbility) {
-      if (bodyA.birdType === 'white' || bodyA.birdType === 'black') {
-      }
-    }
-    if (bodyB.label === 'bird' && bodyB.isLaunched && !bodyB.usedAbility) {
-      if (bodyB.birdType === 'white' || bodyB.birdType === 'black') {
+        physics.removeBody(b);
+        audio.playExplosion();
+        blastNearby(b.position.x, b.position.y, 80);
       }
     }
   });
@@ -270,17 +265,12 @@ function setupCollisionHandling() {
 }
 
 function canvasClickForAbility() {
-  renderer.canvas.addEventListener('click', (e) => {
+  renderer.canvas.addEventListener('pointerdown', (e) => {
     if (getState() !== State.PLAYING) return;
-    if (currentBirdBody && currentBirdBody.isLaunched && !currentBirdBody.usedAbility) {
-      useBirdAbility(currentBirdBody);
-    }
-  });
-  renderer.canvas.addEventListener('touchend', (e) => {
-    if (getState() !== State.PLAYING) return;
-    if (currentBirdBody && currentBirdBody.isLaunched && !currentBirdBody.usedAbility) {
-      useBirdAbility(currentBirdBody);
-    }
+    if (!currentBirdBody || !currentBirdBody.isLaunched || currentBirdBody.usedAbility) return;
+    if (performance.now() - lastLaunchTime < 300) return;
+    if (slingshot.isBirdLoaded()) return;
+    useBirdAbility(currentBirdBody);
   });
 }
 

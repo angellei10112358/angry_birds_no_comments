@@ -1,7 +1,6 @@
-import { screenToWorld, worldToScreen, getCamera, GAME_W, GAME_H } from '../engine/renderer.js';
 import { engine } from '../engine/physics.js';
 
-const { Body, Vector } = Matter;
+const { Body } = Matter;
 
 const SLINGSHOT_X = 200;
 const SLINGSHOT_Y = 480;
@@ -43,7 +42,7 @@ function handlePointerDown(wx, wy) {
     isDragging = true;
     dragStart = { x: wx, y: wy };
     dragCurrent = { x: wx, y: wy };
-    currentBird.isStatic = true;
+    Body.setStatic(currentBird, true);
   }
 }
 
@@ -75,7 +74,7 @@ function handlePointerUp() {
   };
   const speed = Math.sqrt(launchVel.x * launchVel.x + launchVel.y * launchVel.y);
   if (speed > 0.5) {
-    currentBird.isStatic = false;
+    Body.setStatic(currentBird, false);
     Body.setVelocity(currentBird, launchVel);
     currentBird.isLaunched = true;
     birdLoaded = false;
@@ -83,7 +82,7 @@ function handlePointerUp() {
     if (launchCallback) launchCallback(currentBird);
   } else {
     Body.setPosition(currentBird, { x: SLINGSHOT_X, y: SLINGSHOT_Y });
-    currentBird.isStatic = false;
+    Body.setStatic(currentBird, false);
   }
 }
 

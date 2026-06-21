@@ -276,10 +276,14 @@ function getCamera() {
   return { x: cameraX, y: cameraY };
 }
 
+function useScreenSpace() {
+  ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+}
+
 export {
-  init, resize, beginFrame, endFrame,
+  init, resize, beginFrame, endFrame, useScreenSpace,
   drawBackground, drawSlingshot, drawRubberBand, drawTrajectory,
   drawBird, drawPig, drawBlock, drawExplosion,
   setCamera, updateCamera, worldToScreen, screenToWorld, getCamera,
-  GAME_W, GAME_H, scale
+  GAME_W, GAME_H, scale, canvas, ctx
 };
