@@ -29,6 +29,7 @@ let explosions = [];
 
 let inUIState = false;
 let lastLaunchTime = 0;
+let timeoutIds = [];
 
 const FIXED_DT = 1 / 60;
 
@@ -91,6 +92,8 @@ function startGame(levelId) {
 
 function cleanupLevel() {
   inUIState = false;
+  timeoutIds.forEach(id => clearTimeout(id));
+  timeoutIds = [];
   explosions = [];
   launchedBirds = [];
   usedBirds = [];
@@ -206,7 +209,7 @@ function useBirdAbility(bird) {
     audio.playExplosion();
     blastNearby(birdPos.x, birdPos.y, 120);
     currentBirdBody = null;
-    setTimeout(() => scheduleNextBird(), 600);
+    timeoutIds.push(setTimeout(() => scheduleNextBird(), 600));
   } else if (birdType === 'blue') {
     if (result && result.length) {
       for (const b of result) launchedBirds.push(b);
@@ -430,7 +433,7 @@ function updateLaunchedBird() {
   );
 
   if (speed < 0.3 && pos.y > physics.GROUND_Y - 50) {
-    setTimeout(() => {
+    timeoutIds.push(setTimeout(() => {
       if (currentBirdBody && currentBirdBody.isLaunched && !currentBirdBody.isDead) {
         const spd = Math.sqrt(
           currentBirdBody.velocity.x ** 2 + currentBirdBody.velocity.y ** 2
@@ -442,18 +445,18 @@ function updateLaunchedBird() {
           scheduleNextBird();
         }
       }
-    }, 500);
+    }, 500));
   }
 }
 
 function scheduleNextBird() {
   if (birdQueue.length > 0 && pigs.length > 0) {
-    setTimeout(() => {
+    timeoutIds.push(setTimeout(() => {
       if (getState() === State.PLAYING) {
         spawnNextBird();
         renderer.setCamera(slingshot.SLINGSHOT_X, 300);
       }
-    }, 800);
+    }, 800));
   }
 }
 

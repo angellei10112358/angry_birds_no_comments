@@ -1,6 +1,6 @@
 import { engine } from '../engine/physics.js';
 
-const { Body } = Matter;
+const { Body, Sleeping } = Matter;
 
 const SLINGSHOT_X = 200;
 const SLINGSHOT_Y = 480;
@@ -75,6 +75,7 @@ function handlePointerUp() {
   const speed = Math.sqrt(launchVel.x * launchVel.x + launchVel.y * launchVel.y);
   if (speed > 0.5) {
     Body.setStatic(currentBird, false);
+    Sleeping.set(currentBird, false);
     Body.setVelocity(currentBird, launchVel);
     currentBird.isLaunched = true;
     birdLoaded = false;
@@ -88,15 +89,15 @@ function handlePointerUp() {
 
 function calculateTrajectory(startX, startY, velocity) {
   trajectoryPoints = [];
-  const gravity = engine.gravity.y * 1.2;
-  const steps = 40;
-  const dt = 2;
-  for (let i = 0; i < steps; i++) {
-    const t = i * dt;
-    const x = startX + velocity.x * t * 60;
-    const y = startY + velocity.y * t * 60 + 0.5 * gravity * t * t * 60;
+  const g = engine.gravity.y * 0.001 * 16.67;
+  let vx = velocity.x, vy = velocity.y;
+  let x = startX, y = startY;
+  for (let i = 0; i < 100; i++) {
+    x += vx;
+    vy += g;
+    y += vy;
     if (y > 560) break;
-    trajectoryPoints.push({ x, y });
+    if (i % 3 === 0) trajectoryPoints.push({ x, y });
   }
 }
 
