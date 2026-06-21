@@ -69,6 +69,7 @@ function drawButton(ctx, text, x, y, w, h, action) {
 }
 
 function showLevelComplete(ctx, score, stars, onRestart, onNext) {
+  clearButtons();
   ctx.save();
   ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
   ctx.fillStyle = 'rgba(0,0,0,0.7)';
@@ -118,6 +119,7 @@ function showLevelComplete(ctx, score, stars, onRestart, onNext) {
 }
 
 function showGameOver(ctx, onRestart) {
+  clearButtons();
   ctx.save();
   ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
   ctx.fillStyle = 'rgba(0,0,0,0.7)';
@@ -146,6 +148,7 @@ function showGameOver(ctx, onRestart) {
 }
 
 function showMenu(ctx, onStart) {
+  clearButtons();
   ctx.save();
   ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
   ctx.fillStyle = '#87CEEB';

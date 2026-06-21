@@ -4,8 +4,8 @@ const { Body } = Matter;
 
 const SLINGSHOT_X = 200;
 const SLINGSHOT_Y = 480;
-const MAX_DRAG_DIST = 100;
-const LAUNCH_FORCE = 0.008;
+const MAX_DRAG_DIST = 120;
+const LAUNCH_FORCE = 0.035;
 
 let currentBird = null;
 let isDragging = false;

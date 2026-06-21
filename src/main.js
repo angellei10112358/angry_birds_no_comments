@@ -137,25 +137,29 @@ function spawnNextBird() {
 
 function setupInputHandlers() {
   input.on('down', (sx, sy) => {
-    if (inUIState) {
-      audio.resume();
-      const action = hud.handleClick(sx, sy);
-      if (action === 'start_game') {
-        startGame(1);
-      } else if (action === 'restart' || action === 'complete_restart' || action === 'gameover_restart') {
-        startGame(currentLevelId);
-      } else if (action === 'next_level') {
-        const next = currentLevelId + 1;
-        if (next <= getLevelCount()) {
-          startGame(next);
-        } else {
-          showMenu();
-        }
-      } else if (action === 'menu') {
-        showMenu();
-      }
+    audio.resume();
+    const action = hud.handleClick(sx, sy);
+    if (action === 'restart' || action === 'complete_restart' || action === 'gameover_restart') {
+      startGame(currentLevelId);
       return;
     }
+    if (action === 'next_level') {
+      const next = currentLevelId + 1;
+      if (next <= getLevelCount()) startGame(next);
+      else showMenu();
+      return;
+    }
+    if (action === 'menu') {
+      showMenu();
+      return;
+    }
+    if (action === 'start_game') {
+      startGame(1);
+      return;
+    }
+    if (action) return;
+
+    if (inUIState) return;
     if (getState() !== State.PLAYING) return;
     if (!currentBirdBody || !slingshot.isBirdLoaded()) return;
     const wx = sx + renderer.getCamera().x - renderer.GAME_W / 2;
